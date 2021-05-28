@@ -1,0 +1,15 @@
+main: me.ench.main.EnchantRefineryMain
+version: "1.0"
+name: Enchant_Refinery
+description: ench refinery for fallenmc
+author: DrMlem
+
+commands:
+  testinv:
+    description:
+  givehammer:
+    description: give a hammer
+  givebookdummy:
+    description: gives a dummy book
+  debugnbt:
+    description: shows nbt for held item

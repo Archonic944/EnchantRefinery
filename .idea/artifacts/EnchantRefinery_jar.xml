@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="EnchantRefinery:jar">
+    <output-path>$USER_HOME$/Desktop/Server/plugins</output-path>
+    <root id="archive" name="EnchantRefinery.jar">
+      <element id="module-output" name="EnchantRefinery" />
+      <element id="extracted-dir" path="$USER_HOME$/Desktop/Server/spigot.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

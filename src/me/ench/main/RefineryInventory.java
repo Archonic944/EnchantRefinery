@@ -2,6 +2,8 @@ package me.ench.main;
 
 import de.tr7zw.nbtapi.NBTCompound;
 import de.tr7zw.nbtapi.NBTItem;
+import me.zach.DesertMC.Utils.StringUtils.StringUtil;
+import me.zach.DesertMC.Utils.nbt.NBTUtil;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -117,7 +119,6 @@ public class RefineryInventory implements Listener {
 
                     } else {
                         if (!isHammer(item)) {
-
                             if (isBook(item)) {
                                 if (!hasBook) {
                                     if (!hasHammer) {
@@ -128,7 +129,7 @@ public class RefineryInventory implements Listener {
                                     book = item;
                                     hasBook = true;
                                     event.setCancelled(true);
-                                    i.setItem(event.getSlot(), new ItemStack(Material.AIR));
+                                    i.clear(event.getSlot());
                                 } else {
                                     event.setCancelled(true);
                                     return;
@@ -159,26 +160,25 @@ public class RefineryInventory implements Listener {
                         if (hasBook && hasHammer) {
                             int realLevel = new NBTItem(book).getCompound("CustomAttributes").getInteger("REAL_LEVEL");
                             int baseLevel = (new NBTItem(book).getCompound("CustomAttributes").getInteger("BASE_LEVEL"));
-
-                            if (new NBTItem(book).getCompound("CustomAttributes").getInteger("REAL_LEVEL") <= new NBTItem(book).getCompound("CustomAttributes").getInteger("BASE_LEVEL")) {
+                            int maxLevelsToUpgrade = new NBTItem(hammer).getCompound("CustomAttributes").getInteger("MAX_LEVELS_TO_UPGRADE");
+                            if (realLevel <= baseLevel) {
                                 ableToRefine = 1;
-                            } else if (new NBTItem(hammer).getCompound("CustomAttributes").getInteger("MAX_LEVELS_TO_UPGRADE") == 5 && realLevel - baseLevel == 5 && new NBTItem(book).getCompound("CustomAttributes").getCompound("Special") == null) {
+                            } else if (maxLevelsToUpgrade == 5 && realLevel - baseLevel == 5 && new NBTItem(book).getCompound("CustomAttributes").getCompound("Special") == null) {
                                 ableToRefine = 1;
                                 specialGuaranteed = true;
-                            } else if (new NBTItem(hammer).getCompound("CustomAttributes").getInteger("MAX_LEVELS_TO_UPGRADE") > (new NBTItem(book).getCompound("CustomAttributes").getInteger("REAL_LEVEL") - new NBTItem(book).getCompound("CustomAttributes").getInteger("BASE_LEVEL"))) {
+                            } else if (maxLevelsToUpgrade > (realLevel - baseLevel)) {
                                 ableToRefine = 1;
                             } else {
                                 if (new NBTItem(book).getCompound("CustomAttributes").getCompound("Special") != null && realLevel - baseLevel == 5) {
                                     ableToRefine = 4;
-                                } else if (new NBTItem(hammer).getCompound("CustomAttributes").getInteger("MAX_LEVELS_TO_UPGRADE") <= (realLevel - baseLevel)) {
+
+                                } else if (maxLevelsToUpgrade <= (realLevel - baseLevel)) {
                                     ableToRefine = 2;
                                 }
-
                             }
 
                         }
                         openRefineryInventory(player, true);
-
                     }
 
 
@@ -218,7 +218,7 @@ public class RefineryInventory implements Listener {
             hammerNBT = new NBTItem(hammer);
             hammerCompound = hammerNBT.getCompound("CustomAttributes");
             Integer downchance = hammerCompound.getInteger("DOWNGRADE_CHANCE");
-            Integer upchance = 100 - downchance;
+            int upchance = 100 - downchance;
             bookNBT = new NBTItem(book);
             bookCompound = bookNBT.getCompound("CustomAttributes");
             Integer baselevel = bookCompound.getInteger("BASE_LEVEL");
@@ -239,26 +239,20 @@ public class RefineryInventory implements Listener {
                 buttonMeta.setLore(buttonLore);
                 buttonItem.setItemMeta(buttonMeta);
             }else {
-                buttonLore.add(ChatColor.YELLOW + "Chance to be downgraded: " + ChatColor.BLUE + downchance.toString() + "%");
+                buttonLore.add(ChatColor.YELLOW + "Chance to be downgraded: " + ChatColor.BLUE + downchance + "%");
                 buttonLore.add(ChatColor.YELLOW + "Chance to be upgraded: " + ChatColor.BLUE + upchance + "%");
                 buttonLore.add(ChatColor.YELLOW + "Max level to go up to: " + ChatColor.BLUE + maxlevel);
                 buttonLore.add(ChatColor.DARK_GRAY + "" + ChatColor.ITALIC + "Number of levels to go up or down is determined randomly and based on the hammer.");
                 buttonMeta.setLore(buttonLore);
                 buttonItem.setItemMeta(buttonMeta);
-
-
             }
         }
         if (ableToRefine == 2) {
             buttonItem = new ItemStack(Material.STAINED_GLASS, 1, (short) 14);
             buttonMeta = buttonItem.getItemMeta();
             buttonMeta.setDisplayName(ChatColor.RED + "Use a better hammer!");
-            ArrayList<String> buttonLore = new ArrayList<String>();
-            buttonLore.add(ChatColor.RED + "It appears that your book has reached the max level for your hammer.");
-            buttonLore.add(ChatColor.RED + "Please try again with a better hammer.");
-            buttonMeta.setLore(buttonLore);
+            buttonMeta.setLore(StringUtil.wrapLore(ChatColor.RED + "The " + hammer.getItemMeta().getDisplayName() + ChatColor.RED + " can only take your book " + NBTUtil.getCustomAttr(hammerNBT, "MAX_LEVELS_TO_UPGRADE", int.class) + " above the book's starting level (" + NBTUtil.getCustomAttr(bookNBT, "BASE_LEVEL", int.class) + ".\nCome back with a better hammer!"));
             buttonItem.setItemMeta(buttonMeta);
-
             borderItem = new ItemStack(Material.STAINED_GLASS_PANE, 1, (short) 14);
             bordermeta = borderItem.getItemMeta();
             bordermeta.setDisplayName(" ");

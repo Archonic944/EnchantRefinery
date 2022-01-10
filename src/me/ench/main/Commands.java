@@ -31,6 +31,7 @@ public class Commands implements CommandExecutor {
 
         }
         if (command.getName().equalsIgnoreCase("givehammer") && p.hasPermission("admin")) {
+            if(args.length < 1) return false;
             HashMap<String, ItemStack> map = new HashMap<String, ItemStack>();
             map.put("1", Hammers.getWoodHammer());
             map.put("2", Hammers.getStoneHammer());
@@ -51,7 +52,7 @@ public class Commands implements CommandExecutor {
         }
 
         if (command.getName().equalsIgnoreCase("givebookdummy") && p.hasPermission("admin")) {
-
+            if(args.length < 2) return false;
             ItemStack book = new ItemStack(Material.ENCHANTED_BOOK);
             ItemMeta bookmeta = book.getItemMeta();
             bookmeta.setDisplayName(ChatColor.BLUE + "Dummy " + Integer.parseInt(args[1]));
@@ -66,8 +67,6 @@ public class Commands implements CommandExecutor {
 
             bookCompound.setString("ID", "ENCHANTED_BOOK");
             bookCompound.setString("ENCH_ID", "DUMMY");
-
-
             bookCompound.setInteger("BASE_LEVEL", Integer.parseInt(args[0]));
             bookCompound.setInteger("REAL_LEVEL", Integer.parseInt(args[1]));
             p.getInventory().addItem(bookNBT.getItem());

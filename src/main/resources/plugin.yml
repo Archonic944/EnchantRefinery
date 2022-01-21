@@ -5,8 +5,6 @@ description: ench refinery for fallenmc
 author: DrMlem
 
 commands:
-  testinv:
-    description:
   givehammer:
     description: give a hammer
   givebookdummy:

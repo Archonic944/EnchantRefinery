@@ -11,6 +11,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import me.zach.DesertMC.Utils.MiscUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,7 +22,7 @@ public class Commands implements CommandExecutor {
             return false;
         }
         Player p = (Player) commandSender;
-        if (command.getName().equalsIgnoreCase("testinv") && p.hasPermission("admin")) {
+        if (command.getName().equalsIgnoreCase("testinv") && MiscUtils.isAdmin(p)) {
             if(!RefineryUtils.instance.containsKey( ((Player) commandSender).getUniqueId())){
                 RefineryInventory instance = new RefineryInventory();
                 RefineryUtils.instance.put(((Player) commandSender).getUniqueId(), instance);
@@ -30,7 +31,7 @@ public class Commands implements CommandExecutor {
             RefineryUtils.instance.get(((Player) commandSender).getUniqueId()).openRefineryInventory((Player) commandSender, false);
 
         }
-        if (command.getName().equalsIgnoreCase("givehammer") && p.hasPermission("admin")) {
+        if (command.getName().equalsIgnoreCase("givehammer") && MiscUtils.isAdmin(p)) {
             if(args.length < 1) return false;
             HashMap<String, ItemStack> map = new HashMap<String, ItemStack>();
             map.put("1", Hammers.getWoodHammer());
@@ -46,12 +47,12 @@ public class Commands implements CommandExecutor {
                 return false;
             }
         }
-        if (command.getName().equalsIgnoreCase("debugnbt") && p.hasPermission("admin")) {
+        if (command.getName().equalsIgnoreCase("debugnbt") && MiscUtils.isAdmin(p)) {
             p.sendMessage(new NBTItem(p.getInventory().getItemInHand()).toString());
             return true;
         }
 
-        if (command.getName().equalsIgnoreCase("givebookdummy") && p.hasPermission("admin")) {
+        if (command.getName().equalsIgnoreCase("givebookdummy") && MiscUtils.isAdmin(p)) {
             if(args.length < 2) return false;
             ItemStack book = new ItemStack(Material.ENCHANTED_BOOK);
             ItemMeta bookmeta = book.getItemMeta();
@@ -70,17 +71,9 @@ public class Commands implements CommandExecutor {
             bookCompound.setInteger("BASE_LEVEL", Integer.parseInt(args[0]));
             bookCompound.setInteger("REAL_LEVEL", Integer.parseInt(args[1]));
             p.getInventory().addItem(bookNBT.getItem());
-
             return true;
-
-
-
-
-
-
         } else {
             return false;
         }
-
     }
 }

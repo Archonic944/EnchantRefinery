@@ -145,7 +145,7 @@ public enum SpecialEnchant implements Listener {
             }
         }
     },
-    SELF_DESTRUCT("Self Destruct", "Hold down block (with sword) to unleash a giant explosion, killing you, and dealing 14 hp of damage (armor ignored) to anyone within 12 blocks.", "+1 damage", true){
+    SELF_DESTRUCT("Self Destruct", "Hold down block (with sword) to unleash a giant explosion, killing you, and dealing 16 hp of damage (armor ignored) to anyone within 12 blocks.", "+1 damage", true){
         public static final int SECONDS = 3;
         @EventHandler
         public void interact(PlayerInteractEvent event){
@@ -157,22 +157,18 @@ public enum SpecialEnchant implements Listener {
                 boolean hasBar = ActionBarUtils.getActionBar(uuid) instanceof SDActionBar;
                 if(blockTime > 0.5f){
                     if(blockTime > SECONDS){
-                        int damage = 14 + occurrences;
+                        int damage = 16 + occurrences;
                         //self destruct!
                         ParticleEffect.EXPLOSION_LARGE.display(0, 0, 0, 1f, 5, player.getLocation(), 50);
+                        player.getWorld().playSound(player.getLocation(), Sound.EXPLODE, 12, 1);
+                        Events.executeKill(player);
                         List<String> names = new ArrayList<>();
                         for(Damageable damageable : MiscUtils.getNearbyDamageables(player, 12)){
                             PlayerUtils.trueDamage(damageable, damage, player);
-                            damageable.sendMessage(ChatColor.YELLOW + "You were dealt " + ChatColor.RED + damage + " damage by " + player.getName() + "'s " + ChatColor.LIGHT_PURPLE + " Self-Destruct!");
-                            names.add(MiscUtils.getRankColor(damageable.getUniqueId()) + damageable.getName());
+                            damageable.sendMessage(ChatColor.LIGHT_PURPLE + "You were dealt " + ChatColor.RED + damage + ChatColor.LIGHT_PURPLE + " damage by " + player.getDisplayName() + "'s " + ChatColor.LIGHT_PURPLE + " Self-Destruct!");
+                            names.add(damageable instanceof Player ? ((Player) damageable).getDisplayName() : damageable.getName());
                         }
-                        StringBuilder message = new StringBuilder(ChatColor.LIGHT_PURPLE.toString() + ChatColor.BOLD + "BOOM " + ChatColor.LIGHT_PURPLE + "You self destructed, damaging ");
-                        for(int i = 0, size = names.size(); i<size; i++){
-                            String name = names.get(i);
-                            if(i < size - 1) message.append(ChatColor.LIGHT_PURPLE).append(", ").append(name);
-                            else message.append(ChatColor.LIGHT_PURPLE).append(", and ").append(name).append(ChatColor.LIGHT_PURPLE).append("!");
-                        }
-                        player.sendMessage(message.toString());
+                        player.sendMessage(ChatColor.GRAY + "Out with a bang!\n" + ChatColor.LIGHT_PURPLE + "You self destructed, damaging " + StringUtil.series(ChatColor.LIGHT_PURPLE, names.toArray(new String[0])));
                     }else if(hasBar){
                         ActionBarUtils.setActionBar(player, new SDActionBar(blockTime));
                         player.playSound(player.getLocation(), Sound.ITEM_PICKUP, 10, blockTime + 0.5f);

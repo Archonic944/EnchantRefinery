@@ -2,7 +2,9 @@ package me.ench.main;
 
 import de.tr7zw.nbtapi.NBTCompound;
 import de.tr7zw.nbtapi.NBTItem;
+import de.tr7zw.nbtapi.NBTList;
 import me.zach.DesertMC.GameMechanics.Events;
+import me.zach.DesertMC.GameMechanics.hitbox.HitboxListener;
 import me.zach.DesertMC.Utils.ActionBar.ActionBar;
 import me.zach.DesertMC.Utils.ActionBar.ActionBarUtils;
 import me.zach.DesertMC.Utils.MiscUtils;
@@ -28,15 +30,12 @@ import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import static me.ench.main.RefineryUtils.specialScan;
 
 public enum SpecialEnchant implements Listener {
-    SPIKED("Spiked", "Crouch repeatedly and quickly to propel yourself in the direction you are looking. Can be used once every 15 seconds.", "Quicker activation", true){
+    SPIKED("Spiked", "Crouch repeatedly and quickly to propel yourself in the direction you are looking. Can be used once every 2 seconds.", "Quicker activation", true){
         HashMap<UUID, Integer> spikedCrouched = new HashMap<>();
         @EventHandler
         public void spiked(PlayerToggleSneakEvent e){
@@ -45,31 +44,39 @@ public enum SpecialEnchant implements Listener {
             int occurrences = specialScan(p, name());
             if(occurrences > 0){
                 int spikedCount = spikedCrouched.getOrDefault(uuid, 0);
+                Integer newCount = spikedCount + 1;
                 if(spikedCount > -1){
-                    spikedCrouched.put(uuid, spikedCount++);
+                    spikedCrouched.put(uuid, newCount);
                     if(spikedCount == 1){
-                        Bukkit.getScheduler().runTaskLater(EnchantRefineryMain.instancethis, () -> spikedCrouched.remove(uuid), 100);
+                        Bukkit.getScheduler().runTaskLater(EnchantRefineryMain.instancethis, () -> {
+                            if(spikedCrouched.get(uuid) == newCount){
+                                spikedCrouched.remove(uuid);
+                            }
+                        }, 60);
                     }else if(spikedCount >= (8 - occurrences) * 2){
-                        p.getVelocity().multiply(p.getLocation().getDirection().multiply(2));
+                        p.setVelocity(p.getVelocity().add(p.getEyeLocation().getDirection().multiply(2)));
+                        p.playSound(p.getLocation(), Sound.ENDERDRAGON_WINGS, 20, 1.1f);
                         spikedCrouched.put(uuid, -1);
-                        Bukkit.getScheduler().runTaskLater(EnchantRefineryMain.instancethis, () -> spikedCrouched.remove(uuid), 300);
+                        Bukkit.getScheduler().runTaskLater(EnchantRefineryMain.instancethis, () -> spikedCrouched.remove(uuid), 40);
                     }
                 }
             }else spikedCrouched.remove(uuid);
         }
     },
     GRAND_ESCAPE("Grand Escape", "Crouch, jump, and right click at the same time to render yourself invisible until you attack or start getting attacked. Can be used once per life.", "+1 hit taken before expiring", true){
-        HashMap<UUID, GrandEscape> active = new HashMap<>();
+        final HashMap<UUID, GrandEscape> active = new HashMap<>();
+        final Set<UUID> alreadyUsed = new HashSet<>();
         @EventHandler
         public void grandEscape(PlayerInteractEvent event){
             Player player = event.getPlayer();
             UUID uuid = player.getUniqueId();
-            if(!active.containsKey(uuid)){
+            if(!active.containsKey(uuid) && !alreadyUsed.contains(uuid)){
                 int occurrences = specialScan(player, name());
                 if(occurrences > 0){
                     Action action = event.getAction();
                     if((action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) && player.isSneaking() && !((Entity) player).isOnGround()){
                         player.sendMessage(ChatColor.LIGHT_PURPLE + "You made your " + ChatColor.BOLD + "GRAND ESCAPE!" + "\n" + ChatColor.LIGHT_PURPLE + "You'll be invisible until you hit a player, or until you get hit.");
+                        player.playSound(player.getLocation(), Sound.PORTAL_TRAVEL, 10, 1.05f);
                         active.put(uuid, new GrandEscape(player, occurrences));
                     }
                 }
@@ -110,6 +117,7 @@ public enum SpecialEnchant implements Listener {
                 this.invisible = new PlayerInvisible(player, EnchantRefineryMain.instancethis);
                 this.occurrences = occurrences;
                 invisible.setInvisible(true);
+                alreadyUsed.add(player.getUniqueId());
             }
 
             public void onPlayerDamage(){
@@ -128,11 +136,17 @@ public enum SpecialEnchant implements Listener {
             }
 
             public void playerDeath(FallenDeathEvent event){
-                if(!event.isCancelled() && isActive()) renderInactive();
+                if(!event.isCancelled() && isActive()){
+                    renderInactive();
+                }
+                alreadyUsed.remove(invisible.getPlayerUUID());
             }
 
             public void playerLeave(){
-                if(isActive()) renderInactive();
+                if(isActive()){
+                    renderInactive();
+                }
+                alreadyUsed.remove(invisible.getPlayerUUID());
             }
 
             public boolean isActive(){
@@ -145,7 +159,7 @@ public enum SpecialEnchant implements Listener {
             }
         }
     },
-    SELF_DESTRUCT("Self Destruct", "Hold down block (with sword) to unleash a giant explosion, killing you, and dealing 16 hp of damage (armor ignored) to anyone within 12 blocks.", "+1 damage", true){
+    SELF_DESTRUCT("Self Destruct", "Hold down block (with a sword) to unleash a giant explosion, killing you, and dealing 16 hp of true damage (armor ignored) to anyone within 12 blocks.", "+1 damage", true){
         public static final int SECONDS = 3;
         @EventHandler
         public void interact(PlayerInteractEvent event){
@@ -155,11 +169,11 @@ public enum SpecialEnchant implements Listener {
                 UUID uuid = player.getUniqueId();
                 float blockTime = Events.getBlockingTime(uuid);
                 boolean hasBar = ActionBarUtils.getActionBar(uuid) instanceof SDActionBar;
-                if(blockTime > 0.5f){
+                if(blockTime > 0.5f && !HitboxListener.isInSafeZone(player.getLocation())){
                     if(blockTime > SECONDS){
                         int damage = 16 + occurrences;
                         //self destruct!
-                        ParticleEffect.EXPLOSION_LARGE.display(0, 0, 0, 1f, 5, player.getLocation(), 50);
+                        ParticleEffect.EXPLOSION_LARGE.display(0, 0, 0, 1f, 5, player.getLocation(), 100);
                         player.getWorld().playSound(player.getLocation(), Sound.EXPLODE, 12, 1);
                         Events.executeKill(player);
                         List<String> names = new ArrayList<>();
@@ -171,7 +185,7 @@ public enum SpecialEnchant implements Listener {
                         player.sendMessage(ChatColor.GRAY + "Out with a bang!\n" + ChatColor.LIGHT_PURPLE + "You self destructed, damaging " + StringUtil.series(ChatColor.LIGHT_PURPLE, names.toArray(new String[0])));
                     }else if(hasBar){
                         ActionBarUtils.setActionBar(player, new SDActionBar(blockTime));
-                        player.playSound(player.getLocation(), Sound.ITEM_PICKUP, 10, blockTime + 0.5f);
+                        player.getWorld().playSound(player.getLocation(), Sound.ITEM_PICKUP, 10, blockTime/2 + 0.5f);
                     }
                 }else if(blockTime == 0 && hasBar) ActionBarUtils.clearActionBar(player);
             }
@@ -213,10 +227,7 @@ public enum SpecialEnchant implements Listener {
         NBTItem nbt = new NBTItem(book);
         NBTCompound customAttr = nbt.getCompound("CustomAttributes");
         if(customAttr == null) customAttr = nbt.addCompound("CustomAttributes");
-        NBTCompound ench = customAttr.getCompound("enchantments");
-        if(ench == null) ench = customAttr.addCompound("enchantments");
-        NBTCompound special = ench.addCompound("Special");
-        special.setString("ENCH_ID", name());
+        customAttr.setString("SPECIAL_ENCH_ID", name());
         return book;
     }
 
@@ -224,7 +235,7 @@ public enum SpecialEnchant implements Listener {
     String name;
 
     SpecialEnchant(String name, String desc, String perOccurrence, boolean registerEvents){
-        this.desc = StringUtil.wrapLore(desc + "\n" + ChatColor.GRAY + "Per occurrence in weapon and armor: " + ChatColor.LIGHT_PURPLE + perOccurrence);
+        this.desc = StringUtil.wrapLore(desc + "\n\n" + ChatColor.DARK_GRAY + "Per occurrence in weapon and armor: " + ChatColor.LIGHT_PURPLE + perOccurrence);
         this.name = ChatColor.LIGHT_PURPLE + ChatColor.BOLD.toString() + name;
         if(registerEvents) Bukkit.getPluginManager().registerEvents(this, EnchantRefineryMain.instancethis);
     }

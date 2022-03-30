@@ -163,13 +163,13 @@ public class RefineryInventory implements Listener {
                             int maxLevelsToUpgrade = new NBTItem(hammer).getCompound("CustomAttributes").getInteger("MAX_LEVELS_TO_UPGRADE");
                             if (realLevel <= baseLevel) {
                                 ableToRefine = 1;
-                            } else if (maxLevelsToUpgrade == 5 && realLevel - baseLevel == 5 && new NBTItem(book).getCompound("CustomAttributes").getCompound("Special") == null) {
+                            } else if (maxLevelsToUpgrade == 5 && realLevel - baseLevel == 5 && NBTUtil.hasCustomKey(book, "SPECIAL_ENCH_ID")) {
                                 ableToRefine = 1;
                                 specialGuaranteed = true;
                             } else if (maxLevelsToUpgrade > (realLevel - baseLevel)) {
                                 ableToRefine = 1;
                             } else {
-                                if (new NBTItem(book).getCompound("CustomAttributes").getCompound("Special") != null && realLevel - baseLevel == 5) {
+                                if (NBTUtil.hasCustomKey(book, "SPECIAL_ENCH_ID") && realLevel - baseLevel == 5) {
                                     ableToRefine = 4;
 
                                 } else if (maxLevelsToUpgrade <= (realLevel - baseLevel)) {

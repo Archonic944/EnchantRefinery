@@ -2,10 +2,12 @@ package me.ench.main;
 
 import de.tr7zw.nbtapi.NBTCompound;
 import de.tr7zw.nbtapi.NBTItem;
+import me.zach.DesertMC.GameMechanics.EXPMilesstones.MilestonesUtil;
 import me.zach.DesertMC.Utils.nbt.NBTUtil;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -33,7 +35,6 @@ public class RefineryUtils {
         return ThreadLocalRandom.current().nextInt(min, max + 1);
     }
 
-
     public static ItemStack refine(ItemStack book, ItemStack hammer, boolean specialGuaranteed, Player p){
         NBTCompound bookCompound = new NBTItem(book).getCompound("CustomAttributes");
         NBTCompound hammerCompound = new NBTItem(hammer).getCompound("CustomAttributes");
@@ -52,11 +53,11 @@ public class RefineryUtils {
            specialGuaranteed = true;
         }
         NBTItem newNBT = new NBTItem(newBook);
-        if(newNBT.getCompound("CustomAttributes").getCompound("Special") != null) specialGuaranteed = false;
-
+        if(NBTUtil.hasCustomKey(newNBT, "SPECIAL_ENCH_ID")) specialGuaranteed = false;
+        SpecialEnchant enchant = null;
         if(specialGuaranteed){
             SpecialEnchant[] enchants = SpecialEnchant.values();
-            SpecialEnchant enchant = enchants[random(1, enchants.length)];
+            enchant = enchants[random(1, enchants.length)];
             newBook = enchant.applyTo(newBook);
             newNBT = new NBTItem(newBook);
             if(maxed){
@@ -74,8 +75,8 @@ public class RefineryUtils {
             newMeta.setDisplayName(newMeta.getDisplayName().replaceAll("" + realLevel,  "" + (realLevel - 1)));
             newNBT.getItem().setItemMeta(newMeta);
             p.closeInventory();
-            p.sendMessage(ChatColor.RED + "-------------↓ " + ChatColor.BOLD + "BOOK DOWNGRADED..." + ChatColor.RED + " ↓-------------\n\n" + ChatColor.DARK_GRAY + "• Input: " + hammer.getItemMeta().getDisplayName() + ChatColor.GRAY + " + " + book.getItemMeta().getDisplayName() + "\n" + ChatColor.DARK_GRAY + "• Output: " + newNBT.getItem().getItemMeta().getDisplayName());
-            if(specialGuaranteed) p.sendMessage(ChatColor.YELLOW +  "☆" + ChatColor.LIGHT_PURPLE + " Special Enchant Acquired: " + ChatColor.BOLD + newNBT.getCompound("CustomAttributes").getCompound("Special").getString("ENCH_NAME") + "!");
+            p.sendMessage(ChatColor.RED + "-------------↓ " + ChatColor.BOLD + "BOOK DOWNGRADED..." + ChatColor.RED + " ↓-------------\n\n" + ChatColor.DARK_GRAY + "• Input: " + hammer.getItemMeta().getDisplayName() + ChatColor.GRAY + " + " + book.getItemMeta().getDisplayName() + "\n" + ChatColor.DARK_GRAY + "• Output: " + newNBT.getItem().getItemMeta().getDisplayName() + "\n");
+            if(specialGuaranteed) p.sendMessage(ChatColor.YELLOW +  "☆" + ChatColor.LIGHT_PURPLE + " Special Enchant Acquired: " + ChatColor.BOLD + enchant.name + "!");
             p.sendMessage(ChatColor.RED + "-----------------------------------------------");
             Plugin pl = Bukkit.getPluginManager().getPlugin("Enchant_Refinery");
             new BukkitRunnable(){
@@ -118,62 +119,27 @@ public class RefineryUtils {
             newNBT = new NBTItem(book);
             newNBT.getCompound("CustomAttributes").setInteger("REAL_LEVEL", newLevel);
             p.sendMessage(ChatColor.GREEN + "-------------↑ " + ChatColor.BOLD + "BOOK UPGRADED!" + ChatColor.GREEN + " ↑-------------\n\n" + ChatColor.DARK_GRAY + "• Input: " + hammer.getItemMeta().getDisplayName() + ChatColor.GRAY + " + " + previousName + "\n" + ChatColor.DARK_GRAY + "• Output: " + newNBT.getItem().getItemMeta().getDisplayName());
-            if(specialGuaranteed) p.sendMessage(ChatColor.YELLOW +  "☆" + ChatColor.LIGHT_PURPLE + " Special Enchant Acquired: " + ChatColor.BOLD + newNBT.getCompound("CustomAttributes").getCompound("Special").getString("ENCH_NAME") + "!");
+            if(specialGuaranteed) p.sendMessage(ChatColor.YELLOW +  "☆" + ChatColor.LIGHT_PURPLE + " Special Enchant Acquired: " + ChatColor.BOLD + enchant.name + "!");
             p.sendMessage(ChatColor.GREEN + "--------------------------------------------");
             p.closeInventory();
-            new BukkitRunnable(){
-                @Override
-                public void run() {
-                    p.playNote(p.getLocation(), Instrument.PIANO, Note.sharp(0, Note.Tone.D));
-                }
-            };
-            new BukkitRunnable(){
-                @Override
-                public void run() {
-                    p.playNote(p.getLocation(), Instrument.PIANO, Note.natural(0, Note.Tone.F));
-                }
-            }.runTaskLater(Bukkit.getPluginManager().getPlugin("Enchant_Refinery"), 5);
-            new BukkitRunnable(){
-                @Override
-                public void run() {
-                    p.playNote(p.getLocation(), Instrument.PIANO, Note.natural(0, Note.Tone.G));
-                }
-            }.runTaskLater(Bukkit.getPluginManager().getPlugin("Enchant_Refinery"), 5);
-            new BukkitRunnable(){
-                @Override
-                public void run() {
-                    p.playNote(p.getLocation(), Instrument.PIANO, Note.sharp(1, Note.Tone.A));
-                    p.playNote(p.getLocation(), Instrument.PIANO, Note.natural(1, Note.Tone.D));
-                    p.playNote(p.getLocation(), Instrument.PIANO, Note.natural(1, Note.Tone.F));
-                }
-            }.runTaskLater(Bukkit.getPluginManager().getPlugin("Enchant_Refinery"), 9);
-            new BukkitRunnable(){
-                @Override
-                public void run() {
-                    p.playNote(p.getLocation(), Instrument.PIANO, Note.sharp(1, Note.Tone.A));
-                    p.playNote(p.getLocation(), Instrument.PIANO, Note.natural(1, Note.Tone.D));
-                    p.playNote(p.getLocation(), Instrument.PIANO, Note.natural(1, Note.Tone.F));
-                }
-            }.runTaskLater(Bukkit.getPluginManager().getPlugin("Enchant_Refinery"), 7);
+            
             return newNBT.getItem();
         }
     }
 
     public static int specialScan(Player player, String enchId){
-        List<ItemStack> toScan = Arrays.asList(player.getInventory().getArmorContents());
-        toScan.add(player.getItemInHand());
+        PlayerInventory inv = player.getInventory();
+        ItemStack[] toScan = new ItemStack[]{inv.getItemInHand(), inv.getHelmet(), inv.getChestplate(), inv.getLeggings(), inv.getBoots()};
         int occurrences = 0;
         for(ItemStack item : toScan){
             if(item != null && item.getType() != Material.AIR){
                 NBTCompound customAttributes = new NBTItem(item).getCompound("CustomAttributes");
-
                 if(customAttributes != null){
                     NBTCompound enchants = customAttributes.getCompound("enchantments");
                     if(enchants != null){
-                        NBTCompound special = enchants.getCompound("Special");
+                        List<String> special = enchants.getStringList("Special");
                         if(special != null){
-                            String specialId = special.getString("ENCH_ID");
-                            if(specialId != null && specialId.equals(enchId)) occurrences++;
+                            if(special.contains(enchId)) occurrences++;
                         }
                     }
                 }

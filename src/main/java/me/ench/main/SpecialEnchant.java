@@ -159,35 +159,43 @@ public enum SpecialEnchant implements Listener {
             }
         }
     },
-    SELF_DESTRUCT("Self Destruct", "Hold down block (with a sword) to unleash a giant explosion, killing you, and dealing 16 hp of true damage (armor ignored) to anyone within 12 blocks.", "+1 damage", true){
+    SELF_DESTRUCT("Self Destruct", "Hold down right click (with a sword) to unleash a giant explosion, killing you, and dealing 16 hp of true damage (armor ignored) to anyone within 12 blocks.", "+1 damage", true){
         public static final int SECONDS = 3;
         @EventHandler
         public void interact(PlayerInteractEvent event){
             Player player = event.getPlayer();
-            int occurrences = specialScan(player, name());
-            if(occurrences > 0){
-                UUID uuid = player.getUniqueId();
-                float blockTime = Events.getBlockingTime(uuid);
-                boolean hasBar = ActionBarUtils.getActionBar(uuid) instanceof SDActionBar;
-                if(blockTime > 0.5f && !HitboxListener.isInSafeZone(player.getLocation())){
-                    if(blockTime > SECONDS){
-                        int damage = 16 + occurrences;
-                        //self destruct!
-                        ParticleEffect.EXPLOSION_LARGE.display(0, 0, 0, 1f, 5, player.getLocation(), 100);
-                        player.getWorld().playSound(player.getLocation(), Sound.EXPLODE, 12, 1);
-                        Events.executeKill(player);
-                        List<String> names = new ArrayList<>();
-                        for(Damageable damageable : MiscUtils.getNearbyDamageables(player, 12)){
-                            PlayerUtils.trueDamage(damageable, damage, player);
-                            damageable.sendMessage(ChatColor.LIGHT_PURPLE + "You were dealt " + ChatColor.RED + damage + ChatColor.LIGHT_PURPLE + " damage by " + player.getDisplayName() + "'s " + ChatColor.LIGHT_PURPLE + " Self-Destruct!");
-                            names.add(damageable instanceof Player ? ((Player) damageable).getDisplayName() : damageable.getName());
+            if(event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.RIGHT_CLICK_BLOCK){
+                System.out.println("triggered event");
+                if(Events.getBlockingTime(player) > 0.25f) sdCheck(player, 0);
+            }
+        }
+
+        void sdCheck(Player player, float blockTime){
+            if(!player.isOnline()) return;
+            if(player.isBlocking()){
+                int occurrences = specialScan(player, name());
+                if(occurrences > 0){
+                    if(!HitboxListener.isInSafeZone(player.getLocation())){
+                        if(blockTime > SECONDS){
+                            int damage = 16 + occurrences;
+                            //self destruct!
+                            ParticleEffect.EXPLOSION_LARGE.display(0, 0, 0, 1f, 5, player.getLocation(), 100);
+                            player.getWorld().playSound(player.getLocation(), Sound.EXPLODE, 12, 1);
+                            Events.executeKill(player);
+                            List<String> names = new ArrayList<>();
+                            for(Damageable damageable : MiscUtils.getNearbyDamageables(player, 12)){
+                                PlayerUtils.trueDamage(damageable, damage, player);
+                                damageable.sendMessage(ChatColor.LIGHT_PURPLE + "You were dealt " + ChatColor.RED + damage + ChatColor.LIGHT_PURPLE + " damage by " + player.getDisplayName() + "'s " + ChatColor.LIGHT_PURPLE + " Self-Destruct!");
+                                names.add(damageable instanceof Player ? ((Player) damageable).getDisplayName() : damageable.getName());
+                            }
+                            player.sendMessage(ChatColor.AQUA + "Out with a bang!\n" + ChatColor.LIGHT_PURPLE + "You self destructed, damaging " + StringUtil.series(ChatColor.LIGHT_PURPLE, names.toArray(new String[0])) + ChatColor.LIGHT_PURPLE + ".");
+                        }else{
+                            ActionBarUtils.sendActionBar(player, new SDActionBar(blockTime), 1);
+                            player.getWorld().playSound(player.getLocation(), Sound.ITEM_PICKUP, 10, blockTime/2 + 0.6f);
+                            Bukkit.getScheduler().runTask(EnchantRefineryMain.instancethis, () -> sdCheck(player, blockTime + 0.05f));
                         }
-                        player.sendMessage(ChatColor.GRAY + "Out with a bang!\n" + ChatColor.LIGHT_PURPLE + "You self destructed, damaging " + StringUtil.series(ChatColor.LIGHT_PURPLE, names.toArray(new String[0])));
-                    }else if(hasBar){
-                        ActionBarUtils.setActionBar(player, new SDActionBar(blockTime));
-                        player.getWorld().playSound(player.getLocation(), Sound.ITEM_PICKUP, 10, blockTime/2 + 0.5f);
                     }
-                }else if(blockTime == 0 && hasBar) ActionBarUtils.clearActionBar(player);
+                }
             }
         }
 

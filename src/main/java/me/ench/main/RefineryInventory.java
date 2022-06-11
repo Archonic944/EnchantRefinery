@@ -8,14 +8,9 @@ import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
-import org.bukkit.event.player.PlayerPickupItemEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.Plugin;
@@ -92,7 +87,7 @@ public class RefineryInventory implements Listener {
                                         refineryInventory.setItem(12, new ItemStack(Material.AIR));
                                         refineryInventory.setItem(14, new ItemStack(Material.AIR));
                                         if(player.getItemInHand() != null) player.getInventory().addItem(player.getItemInHand());
-                                        player.setItemInHand(RefineryUtils.refine(book, hammer, specialGuaranteed, player));
+                                        player.setItemInHand(RefineryUtils.refine(book, hammer, player));
                                         book = new ItemStack(Material.AIR);
                                         hammer = new ItemStack(Material.AIR);
                                         hasBook = false;
@@ -308,12 +303,12 @@ public class RefineryInventory implements Listener {
         if(hasHammer) {
             refineryInventory.setItem(12, hammer);
         }else {
-            refineryInventory.setItem(12, new ItemStack(Material.AIR));
+            refineryInventory.clear(12);
         }
         if (hasBook) {
             refineryInventory.setItem(14, book);
         }else {
-            refineryInventory.setItem(14, new ItemStack(Material.AIR));
+            refineryInventory.clear(14);
         }
 
 

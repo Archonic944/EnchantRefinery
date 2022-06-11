@@ -3,6 +3,8 @@ package me.ench.main;
 import de.tr7zw.nbtapi.NBTCompound;
 import de.tr7zw.nbtapi.NBTItem;
 import me.zach.DesertMC.GameMechanics.EXPMilesstones.MilestonesUtil;
+import me.zach.DesertMC.Utils.MiscUtils;
+import me.zach.DesertMC.Utils.ench.CustomEnch;
 import me.zach.DesertMC.Utils.nbt.NBTUtil;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
@@ -35,7 +37,7 @@ public class RefineryUtils {
         return ThreadLocalRandom.current().nextInt(min, max + 1);
     }
 
-    public static ItemStack refine(ItemStack book, ItemStack hammer, boolean specialGuaranteed, Player p){
+    public static ItemStack refine(ItemStack book, ItemStack hammer, Player p){
         NBTCompound bookCompound = new NBTItem(book).getCompound("CustomAttributes");
         NBTCompound hammerCompound = new NBTItem(hammer).getCompound("CustomAttributes");
 
@@ -46,85 +48,73 @@ public class RefineryUtils {
         int maxLevel = hammerCompound.getInteger("MAX_LEVELS_TO_UPGRADE");
         int remainingLevels = maxLevel - (realLevel - baseLevel);
         ItemStack newBook = book.clone();
-        ItemMeta newMeta = newBook.getItemMeta();
         int randomP = random(1, 100);
-
+        boolean specialGuaranteed;
         if(randomP >= 75 && maxLevel == 5) {
            specialGuaranteed = true;
-        }
+        }else specialGuaranteed = maxed && maxLevel == 5;
         NBTItem newNBT = new NBTItem(newBook);
         if(NBTUtil.hasCustomKey(newNBT, "SPECIAL_ENCH_ID")) specialGuaranteed = false;
         SpecialEnchant enchant = null;
         if(specialGuaranteed){
             SpecialEnchant[] enchants = SpecialEnchant.values();
             enchant = enchants[random(1, enchants.length)];
-            newBook = enchant.applyTo(newBook);
-            newNBT = new NBTItem(newBook);
-            if(maxed){
-                p.sendMessage(ChatColor.LIGHT_PURPLE + "-----------" + ChatColor.YELLOW + "☆" + ChatColor.LIGHT_PURPLE + "" + ChatColor.BOLD + "SPECIAL ENCHANT!" + ChatColor.YELLOW + "☆" + ChatColor.LIGHT_PURPLE + "------------" + "\n\n" + ChatColor.GRAY + "Name: " + ChatColor.LIGHT_PURPLE + "" + ChatColor.BOLD + enchant.name);
-                p.sendMessage(ChatColor.LIGHT_PURPLE + "------------------------------------------");
+        }
+        if(!maxed){
+            if(randomP <= hammerCompound.getInteger("DOWNGRADE_CHANCE") && realLevel != 1){
+                newBook = CustomEnch.fromID(newNBT.getCompound("CustomAttributes").getString("ENCH_ID")).getBook(realLevel - 1);
                 p.closeInventory();
-                return newBook;
+                p.sendMessage(ChatColor.RED + "-------------↓ " + ChatColor.BOLD + "BOOK DOWNGRADED..." + ChatColor.RED + " ↓-------------\n\n" + ChatColor.DARK_GRAY + "• Input: " + hammer.getItemMeta().getDisplayName() + ChatColor.GRAY + " + " + book.getItemMeta().getDisplayName() + "\n" + ChatColor.DARK_GRAY + "• Output: " + newNBT.getItem().getItemMeta().getDisplayName() + "\n");
+                if(specialGuaranteed)
+                    p.sendMessage(ChatColor.YELLOW + "☆" + ChatColor.LIGHT_PURPLE + " Special Enchant Acquired: " + ChatColor.BOLD + enchant.name + "!");
+                p.sendMessage(ChatColor.RED + "-----------------------------------------------");
+                Plugin pl = Bukkit.getPluginManager().getPlugin("Enchant_Refinery");
+                new BukkitRunnable() {
+                    @Override
+                    public void run(){
+                        p.playNote(p.getLocation(), Instrument.PIANO, Note.sharp(0, Note.Tone.F));
+                        p.playNote(p.getLocation(), Instrument.PIANO, Note.natural(0, Note.Tone.F));
+                    }
+                }.runTaskLater(pl, 5);
+                new BukkitRunnable() {
+                    @Override
+                    public void run(){
+                        p.playNote(p.getLocation(), Instrument.PIANO, Note.sharp(0, Note.Tone.D));
+                        p.playNote(p.getLocation(), Instrument.PIANO, Note.natural(0, Note.Tone.C));
+
+                    }
+                }.runTaskLater(pl, 9);
+                new BukkitRunnable() {
+                    @Override
+                    public void run(){
+                        p.playNote(p.getLocation(), Instrument.PIANO, Note.sharp(0, Note.Tone.D));
+                        p.playNote(p.getLocation(), Instrument.PIANO, Note.natural(0, Note.Tone.C));
+
+                    }
+                }.runTaskLater(pl, 7);
             }else{
-                newMeta = newBook.getItemMeta();
+                int newLevel = 1;
+                if(minLevel >= remainingLevels){
+                    newLevel = realLevel + remainingLevels;
+                }else{
+                    newLevel = realLevel + random(minLevel, remainingLevels);
+                }
+                newBook = CustomEnch.fromID(newNBT.getCompound("CustomAttributes").getString("ENCH_ID")).getBook(newLevel);
+                p.sendMessage(ChatColor.GREEN + "-------------↑ " + ChatColor.BOLD + "BOOK UPGRADED!" + ChatColor.GREEN + " ↑-------------\n\n" + ChatColor.DARK_GRAY + "• Input: " + hammer.getItemMeta().getDisplayName() + ChatColor.GRAY + " + " + book.getItemMeta().getDisplayName() + "\n" + ChatColor.DARK_GRAY + "• Output: " + newBook.getItemMeta().getDisplayName());
+                if(enchant != null){
+                    p.sendMessage(ChatColor.YELLOW + "☆" + ChatColor.LIGHT_PURPLE + " Special Enchant Acquired: " + ChatColor.BOLD + enchant.name + "!");
+                }
+                p.sendMessage(ChatColor.GREEN + "--------------------------------------------");
+                p.closeInventory();
             }
-        }
-        if(randomP <= hammerCompound.getInteger("DOWNGRADE_CHANCE") && realLevel != 1) {
-
-            newNBT.getCompound("CustomAttributes").setInteger("REAL_LEVEL", (newNBT.getCompound("CustomAttributes").getInteger("REAL_LEVEL") - 1));
-            newMeta.setDisplayName(newMeta.getDisplayName().replaceAll("" + realLevel,  "" + (realLevel - 1)));
-            newNBT.getItem().setItemMeta(newMeta);
+        }else if(enchant != null){
+            newBook = enchant.applyTo(newBook);
+            p.sendMessage(ChatColor.LIGHT_PURPLE + "-----------" + ChatColor.YELLOW + "☆" + ChatColor.LIGHT_PURPLE + "" + ChatColor.BOLD + "SPECIAL ENCHANT!" + ChatColor.YELLOW + "☆" + ChatColor.LIGHT_PURPLE + "------------" + "\n\n" + ChatColor.GRAY + "Name: " + ChatColor.LIGHT_PURPLE + "" + ChatColor.BOLD + enchant.name);
+            p.sendMessage(ChatColor.LIGHT_PURPLE + "------------------------------------------");
             p.closeInventory();
-            p.sendMessage(ChatColor.RED + "-------------↓ " + ChatColor.BOLD + "BOOK DOWNGRADED..." + ChatColor.RED + " ↓-------------\n\n" + ChatColor.DARK_GRAY + "• Input: " + hammer.getItemMeta().getDisplayName() + ChatColor.GRAY + " + " + book.getItemMeta().getDisplayName() + "\n" + ChatColor.DARK_GRAY + "• Output: " + newNBT.getItem().getItemMeta().getDisplayName() + "\n");
-            if(specialGuaranteed) p.sendMessage(ChatColor.YELLOW +  "☆" + ChatColor.LIGHT_PURPLE + " Special Enchant Acquired: " + ChatColor.BOLD + enchant.name + "!");
-            p.sendMessage(ChatColor.RED + "-----------------------------------------------");
-            Plugin pl = Bukkit.getPluginManager().getPlugin("Enchant_Refinery");
-            new BukkitRunnable(){
-                @Override
-                public void run() {
-                    p.playNote(p.getLocation(), Instrument.PIANO, Note.sharp(0, Note.Tone.F));
-                    p.playNote(p.getLocation(), Instrument.PIANO, Note.natural(0, Note.Tone.F));
-                }
-            }.runTaskLater(pl, 5);
-            new BukkitRunnable(){
-                @Override
-                public void run() {
-                    p.playNote(p.getLocation(), Instrument.PIANO, Note.sharp(0, Note.Tone.D));
-                    p.playNote(p.getLocation(), Instrument.PIANO, Note.natural(0, Note.Tone.C));
-
-                }
-            }.runTaskLater(pl, 9);
-            new BukkitRunnable(){
-                @Override
-                public void run() {
-                    p.playNote(p.getLocation(), Instrument.PIANO, Note.sharp(0, Note.Tone.D));
-                    p.playNote(p.getLocation(), Instrument.PIANO, Note.natural(0, Note.Tone.C));
-
-                }
-            }.runTaskLater(pl, 7);
-
-
-            return newNBT.getItem();
-        }else {
-            int newLevel = 1;
-            if(minLevel >= remainingLevels){
-                newLevel = realLevel + remainingLevels;
-            }else{
-                newLevel = realLevel + random(minLevel, remainingLevels);
-            }
-            newMeta.setDisplayName(newMeta.getDisplayName().replaceAll("" + realLevel, "" + newLevel));
-            String previousName = book.getItemMeta().getDisplayName();
-            book = newNBT.getItem();
-            book.setItemMeta(newMeta);
-            newNBT = new NBTItem(book);
-            newNBT.getCompound("CustomAttributes").setInteger("REAL_LEVEL", newLevel);
-            p.sendMessage(ChatColor.GREEN + "-------------↑ " + ChatColor.BOLD + "BOOK UPGRADED!" + ChatColor.GREEN + " ↑-------------\n\n" + ChatColor.DARK_GRAY + "• Input: " + hammer.getItemMeta().getDisplayName() + ChatColor.GRAY + " + " + previousName + "\n" + ChatColor.DARK_GRAY + "• Output: " + newNBT.getItem().getItemMeta().getDisplayName());
-            if(specialGuaranteed) p.sendMessage(ChatColor.YELLOW +  "☆" + ChatColor.LIGHT_PURPLE + " Special Enchant Acquired: " + ChatColor.BOLD + enchant.name + "!");
-            p.sendMessage(ChatColor.GREEN + "--------------------------------------------");
-            p.closeInventory();
-            
-            return newNBT.getItem();
+            MiscUtils.playPianoMelody(p, "ABCDEFG)   ABCDEFG");
         }
+        return newBook;
     }
 
     public static int specialScan(Player player, String enchId){

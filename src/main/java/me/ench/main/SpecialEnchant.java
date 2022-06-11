@@ -44,8 +44,8 @@ public enum SpecialEnchant implements Listener {
             int occurrences = specialScan(p, name());
             if(occurrences > 0){
                 int spikedCount = spikedCrouched.getOrDefault(uuid, 0);
-                Integer newCount = spikedCount + 1;
                 if(spikedCount > -1){
+                    Integer newCount = spikedCount + 1;
                     spikedCrouched.put(uuid, newCount);
                     if(spikedCount == 1){
                         Bukkit.getScheduler().runTaskLater(EnchantRefineryMain.instancethis, () -> {

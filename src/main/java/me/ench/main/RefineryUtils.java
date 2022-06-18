@@ -61,8 +61,8 @@ public class RefineryUtils {
             enchant = enchants[random(1, enchants.length)];
         }
         if(!maxed){
-            if(randomP <= hammerCompound.getInteger("DOWNGRADE_CHANCE") && realLevel != 1){
-                newBook = CustomEnch.fromID(newNBT.getCompound("CustomAttributes").getString("ENCH_ID")).getBook(realLevel - 1);
+            if(randomP <= hammerCompound.getInteger("DOWNGRADE_CHANCE") && realLevel != baseLevel){
+                newBook = CustomEnch.fromID(newNBT.getCompound("CustomAttributes").getString("ENCH_ID")).getBook(baseLevel, realLevel - 1);
                 p.closeInventory();
                 p.sendMessage(ChatColor.RED + "-------------↓ " + ChatColor.BOLD + "BOOK DOWNGRADED..." + ChatColor.RED + " ↓-------------\n\n" + ChatColor.DARK_GRAY + "• Input: " + hammer.getItemMeta().getDisplayName() + ChatColor.GRAY + " + " + book.getItemMeta().getDisplayName() + "\n" + ChatColor.DARK_GRAY + "• Output: " + newNBT.getItem().getItemMeta().getDisplayName() + "\n");
                 if(specialGuaranteed)
@@ -99,7 +99,7 @@ public class RefineryUtils {
                 }else{
                     newLevel = realLevel + random(minLevel, remainingLevels);
                 }
-                newBook = CustomEnch.fromID(newNBT.getCompound("CustomAttributes").getString("ENCH_ID")).getBook(newLevel);
+                newBook = CustomEnch.fromID(newNBT.getCompound("CustomAttributes").getString("ENCH_ID")).getBook(baseLevel, newLevel);
                 p.sendMessage(ChatColor.GREEN + "-------------↑ " + ChatColor.BOLD + "BOOK UPGRADED!" + ChatColor.GREEN + " ↑-------------\n\n" + ChatColor.DARK_GRAY + "• Input: " + hammer.getItemMeta().getDisplayName() + ChatColor.GRAY + " + " + book.getItemMeta().getDisplayName() + "\n" + ChatColor.DARK_GRAY + "• Output: " + newBook.getItemMeta().getDisplayName());
                 if(enchant != null){
                     p.sendMessage(ChatColor.YELLOW + "☆" + ChatColor.LIGHT_PURPLE + " Special Enchant Acquired: " + ChatColor.BOLD + enchant.name + "!");
